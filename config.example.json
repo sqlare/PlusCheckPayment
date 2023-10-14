@@ -1,0 +1,12 @@
+{
+    "mysql": {
+      "host": "localhost",
+      "user": "root",
+      "password": "PASSWORD",
+      "database": "MYDATABASE"
+    },
+    "toss": {
+      "inputWord": "plusp"
+    }
+  }
+  

@@ -1,0 +1,24 @@
+{
+  "name": "pluscheckpayment",
+  "version": "1.0.0",
+  "description": "Plus with Sqlare의 '캐시'시스템 입금 여부를 확인하기 위한 Node.JS 기반의 시스템이에요.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sqlare/PlusCheckPayment.git"
+  },
+  "author": "Plus with Sqlare",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/sqlare/PlusCheckPayment/issues"
+  },
+  "homepage": "https://github.com/sqlare/PlusCheckPayment#readme",
+  "dependencies": {
+    "axios": "^1.5.1",
+    "mysql2": "^3.6.1"
+  }
+}
