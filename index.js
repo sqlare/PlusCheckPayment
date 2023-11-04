@@ -9,29 +9,37 @@ const pool = mysql.createPool(config.mysql);
 const checkAndRecordTransfers = async () => {
   try {
     const requestOptions = {
-        url: `https://api-public.toss.im/api-public/v3/cashtag/transfer-feed/received/list?inputWord=${config.toss.inputWord}`, // 대상 서버 URL
-        method: 'GET'
+      url: `https://api-public.toss.im/api-public/v3/cashtag/transfer-feed/received/list?inputWord=${config.toss.inputWord}`,
+      method: 'GET'
     };
 
     const tossResponse = await axios(requestOptions);
     const transfers = tossResponse.data.success.data;
+
     for (const transfer of transfers) {
-        const tossDateTime = new Date(transfer.transferedTs);
-        const mysqlDateTime = tossDateTime.toISOString().slice(0, 19).replace('T', ' ');
-      
-        const [existingTransfer] = await pool.query('SELECT * FROM cash_transfers WHERE cashtagTransferId = ?', [transfer.cashtagTransferId]);
-      
-        if (existingTransfer.length === 0) {
-          await pool.query('INSERT INTO cash_transfers (method, cashtagTransferId, senderDisplayName, amount, transferedTs) VALUES (?, ?, ?, ?, ?)',
-            ['unknown', transfer.cashtagTransferId, transfer.senderDisplayName, transfer.amount, mysqlDateTime]);
+      const tossDateTime = new Date(transfer.transferedTs);
+      const mysqlDateTime = tossDateTime.toISOString().slice(0, 19).replace('T', ' ');
+
+      const [existingTransfer] = await pool.query('SELECT * FROM cash_transfers WHERE cashtagTransferId = ?', [transfer.cashtagTransferId]);
+
+      if (existingTransfer.length === 0) {
+        await pool.query('INSERT INTO cash_transfers (method, cashtagTransferId, senderDisplayName, amount, transferedTs) VALUES (?, ?, ?, ?, ?)',
+          ['unknown', transfer.cashtagTransferId, transfer.senderDisplayName, transfer.amount, mysqlDateTime]);
+      } else {
+        if (existingTransfer[0].amount !== transfer.amount || existingTransfer[0].senderDisplayName !== transfer.senderDisplayName) {
+          await pool.query('UPDATE cash_transfers SET amount = ?, senderDisplayName = ?, transferedTs = ? WHERE cashtagTransferId = ?',
+            [transfer.amount, transfer.senderDisplayName, mysqlDateTime, transfer.cashtagTransferId]);
+        }
+
+        const [balanceRecord] = await pool.query('SELECT * FROM pluscoin_balance WHERE method = ? AND id = ?', ['unknown', transfer.cashtagTransferId]);
+
+        if (balanceRecord.length === 0) {
         } else {
-          if (existingTransfer[0].amount !== transfer.amount || existingTransfer[0].senderDisplayName !== transfer.senderDisplayName) {
-            await pool.query('UPDATE cash_transfers SET amount = ?, senderDisplayName = ?, transferedTs = ? WHERE cashtagTransferId = ?',
-              [transfer.amount, transfer.senderDisplayName, mysqlDateTime, transfer.cashtagTransferId]);
-          }
+          await pool.query('UPDATE pluscoin_balance SET cash = cash + ? WHERE method = ? AND id = ?',
+            [transfer.amount, 'unknown', transfer.cashtagTransferId]);
         }
       }
-      
+    }
   } catch (error) {
     console.error('Error:', error);
   }
